@@ -195,6 +195,7 @@ int set_pmem_node(int nid)
         NODE_DATA(nid)->pm_node=1;
         return 0;
 }
+EXPORT_SYMBOL(set_pmem_node);
 #endif
 
 
