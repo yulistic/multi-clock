@@ -2023,6 +2023,8 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
 	struct pglist_data *pgdat = lruvec_pgdat(lruvec);
 	struct zone_reclaim_stat *reclaim_stat = &lruvec->reclaim_stat;
 	bool stalled = false;
+	struct page *page;
+	struct page *page2;
 
 	while (unlikely(too_many_isolated(pgdat, file, sc))) {
 		if (stalled)
@@ -2058,7 +2060,17 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
 
 #ifdef CONFIG_MULTICLOCK
 	if (pgdat->pm_node == 0) {
-		int ret = migrate_pages(&page_list, vmscan_alloc_pmem_page, NULL, 0, MIGRATE_SYNC, MR_MEMORY_HOTPLUG);
+		// XXX: log demoting pages
+		list_for_each_entry_safe (page, page2, &page_list, lru) {
+			// pr_warn("multiclock src %lx @ nid %d, dst @ nid %d, pid %d\n",
+			pr_warn("multiclock demote src %lx @ nid %d, pid %d\n",
+				page_to_pfn(page), pgdat->node_id,
+				current->pid);
+		}
+
+		// XXX: Do not migrate.
+		// int ret = migrate_pages(&page_list, vmscan_alloc_pmem_page, NULL, 0, MIGRATE_SYNC, MR_MEMORY_HOTPLUG);
+		int ret = nr_taken;
 		nr_reclaimed = (ret >= 0 ? nr_taken - ret : 0);
 		__mod_node_page_state(pgdat, NR_DEMOTED, nr_reclaimed);
 	}
@@ -2260,6 +2272,8 @@ shrink_promote_list(unsigned long nr_to_scan,
         isolate_mode_t isolate_mode = 0;
         int file = is_file_lru(lru);
         struct pglist_data *pgdat = lruvec_pgdat(lruvec);
+	struct page *page;
+	struct page *page2;
 
         lru_add_drain();
 
@@ -2276,8 +2290,18 @@ shrink_promote_list(unsigned long nr_to_scan,
         spin_unlock_irq(&pgdat->lru_lock);
 
         if (nr_taken) {
-                int ret = migrate_pages(&l_hold, vmscan_alloc_normal_page,
-                                NULL, 0, MIGRATE_SYNC, MR_MEMORY_HOTPLUG);
+		// XXX: log promoting pages
+		list_for_each_entry_safe (page, page2, &l_hold, lru) {
+			// pr_warn("multiclock src %lx @ nid %d, dst @ nid %d, pid %d\n",
+			pr_warn("multiclock promote src %lx @ nid %d, pid %d\n",
+				page_to_pfn(page), pgdat->node_id,
+				current->pid);
+		}
+
+		// XXX: Do not migrate.
+		// int ret = migrate_pages(&l_hold, vmscan_alloc_normal_page,
+                //                 NULL, 0, MIGRATE_SYNC, MR_MEMORY_HOTPLUG);
+		int ret = nr_taken; // nothing migrated.
                 nr_migrated = (ret < 0 ? 0 : nr_taken - ret);
                 __mod_node_page_state(pgdat, NR_PROMOTED, nr_migrated);
 
