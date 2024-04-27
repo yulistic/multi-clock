@@ -181,7 +181,9 @@ static DECLARE_RWSEM(shrinker_rwsem);
 
 
 #ifdef CONFIG_MULTICLOCK
-int pmem_node_id = -1;
+// int pmem_node_id = -1;
+// XXX: Hardcoding. CXL memory node id is 2.
+int pmem_node_id = 2;
 int set_pmem_node_id(int nid)
 {
 

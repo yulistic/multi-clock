@@ -124,6 +124,10 @@ static inline int register_one_node(int nid)
 		unsigned long start_pfn = pgdat->node_start_pfn;
 		unsigned long end_pfn = start_pfn + pgdat->node_spanned_pages;
 
+		pr_warn("[CHECK] register_one_node: %d\n", nid);
+		if (nid == 2)
+			NODE_DATA(nid)->pm_node = 1;
+
 		error = __register_one_node(nid);
 		if (error)
 			return error;
