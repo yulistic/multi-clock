@@ -15,6 +15,7 @@
 #ifndef _LINUX_NODE_H_
 #define _LINUX_NODE_H_
 
+#include "linux/mm.h"
 #include <linux/device.h>
 #include <linux/cpumask.h>
 #include <linux/list.h>
@@ -124,9 +125,15 @@ static inline int register_one_node(int nid)
 		unsigned long start_pfn = pgdat->node_start_pfn;
 		unsigned long end_pfn = start_pfn + pgdat->node_spanned_pages;
 
-		pr_warn("[CHECK] register_one_node: %d\n", nid);
-		if (nid == 2)
-			NODE_DATA(nid)->pm_node = 1;
+		// XXX: Hardcoding. CXL memory node id is 2.
+		if (nid == 2) {
+			set_pmem_node_id(nid);
+			set_pmem_node(nid);
+			// NODE_DATA(nid)->pm_node = 1;
+		}
+
+		pr_warn("[CHECK] register_one_node: nid=%d pm_node=%d pmem_node_id=%d\n",
+			nid, NODE_DATA(nid)->pm_node, get_pmem_node_id());
 
 		error = __register_one_node(nid);
 		if (error)

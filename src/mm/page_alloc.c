@@ -4700,6 +4700,7 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order, int preferred_nid,
 	 * There are several places where we assume that the order value is sane
 	 * so bail out early if the request is out of bound.
 	 */
+	 /*
 #ifdef CONFIG_MULTICLOCK
 
 	if((gfp_mask & __GFP_PMEM)!=0)
@@ -4711,6 +4712,10 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order, int preferred_nid,
                         else
                                 node_clear(nid, nodemask_test);
                 }
+
+		if (nodemask)
+		// pr_warn("[CHECK] GFP=1 nodemask=%lx nodemask_test=%lx\n",
+		// 	nodemask->bits[0], nodemask_test.bits[0]);
 
                 nodemask = &nodemask_test;
 	}
@@ -4726,10 +4731,15 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order, int preferred_nid,
             			node_clear(nid, nodemask_test);
 		}
 
+		if (nodemask)
+		// pr_warn("[CHECK] GFP=0 nodemask=%lx nodemask_test=%lx\n",
+		// 	nodemask->bits[0], nodemask_test.bits[0]);
+
 		nodemask = &nodemask_test;
         }
 
 #endif	
+*/
 
 	if (unlikely(order >= MAX_ORDER)) {
 		WARN_ON_ONCE(!(gfp_mask & __GFP_NOWARN));

@@ -97,6 +97,7 @@ extern int mmap_rnd_compat_bits __read_mostly;
 #ifdef CONFIG_MULTICLOCK
 extern int pmem_node_id;
 int set_pmem_node_id(int nid);
+int get_pmem_node_id(void);
 int set_pmem_node(int nid);
 #endif
 
