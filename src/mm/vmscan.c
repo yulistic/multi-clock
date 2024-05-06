@@ -2077,8 +2077,8 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
 		}
 
 		// XXX: Do not migrate.
-		int ret = migrate_pages(&page_list, vmscan_alloc_pmem_page, NULL, 0, MIGRATE_SYNC, MR_MEMORY_HOTPLUG);
-		// int ret = nr_taken;
+		// int ret = migrate_pages(&page_list, vmscan_alloc_pmem_page, NULL, 0, MIGRATE_SYNC, MR_MEMORY_HOTPLUG);
+		int ret = nr_taken;
 		nr_reclaimed = (ret >= 0 ? nr_taken - ret : 0);
 		__mod_node_page_state(pgdat, NR_DEMOTED, nr_reclaimed);
 	}
@@ -2307,9 +2307,9 @@ shrink_promote_list(unsigned long nr_to_scan,
 		}
 
 		// XXX: Do not migrate.
-		int ret = migrate_pages(&l_hold, vmscan_alloc_normal_page,
-                                NULL, 0, MIGRATE_SYNC, MR_MEMORY_HOTPLUG);
-		// int ret = nr_taken; // nothing migrated.
+		// int ret = migrate_pages(&l_hold, vmscan_alloc_normal_page,
+                //                 NULL, 0, MIGRATE_SYNC, MR_MEMORY_HOTPLUG);
+		int ret = nr_taken; // nothing migrated.
                 nr_migrated = (ret < 0 ? 0 : nr_taken - ret);
                 __mod_node_page_state(pgdat, NR_PROMOTED, nr_migrated);
 
