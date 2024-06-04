@@ -4700,46 +4700,40 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order, int preferred_nid,
 	 * There are several places where we assume that the order value is sane
 	 * so bail out early if the request is out of bound.
 	 */
-	 /*
 #ifdef CONFIG_MULTICLOCK
 
-	if((gfp_mask & __GFP_PMEM)!=0)
-	{
-		for_each_node_state(nid, N_MEMORY)
-                {
-                        if(NODE_DATA(nid)->pm_node!=0)
-                                node_set(nid, nodemask_test);
-                        else
-                                node_clear(nid, nodemask_test);
-                }
+	if (nodemask) {
+		if ((gfp_mask & __GFP_PMEM) != 0) {
+			for_each_node_state (nid, N_MEMORY) {
+				if (NODE_DATA(nid)->pm_node != 0 &&
+				    node_isset(nid, *nodemask))
+					node_set(nid, nodemask_test);
+				else
+					node_clear(nid, nodemask_test);
+			}
 
-		if (nodemask)
-		// pr_warn("[CHECK] GFP=1 nodemask=%lx nodemask_test=%lx\n",
-		// 	nodemask->bits[0], nodemask_test.bits[0]);
+			// pr_warn("[CHECK] GFP=1 nodemask=%lx nodemask_test=%lx\n",
+			// 	nodemask->bits[0], nodemask_test.bits[0]);
 
-                nodemask = &nodemask_test;
+			nodemask = &nodemask_test; // and with 100
+
+		} else if ((gfp_mask & __GFP_PMEM) == 0 && pmem_node_id != -1) {
+			for_each_node_state (nid, N_MEMORY) {
+				if (NODE_DATA(nid)->pm_node == 0 &&
+				    node_isset(nid, *nodemask))
+					node_set(nid, nodemask_test);
+				else
+					node_clear(nid, nodemask_test);
+			}
+
+			// pr_warn("[CHECK] GFP=0 nodemask=%lx nodemask_test=%lx\n",
+			// 	nodemask->bits[0], nodemask_test.bits[0]);
+
+			nodemask = &nodemask_test; // and with 011
+		}
 	}
 
-	else if((gfp_mask & __GFP_PMEM)==0 && pmem_node_id!=-1)
-        {
-		
-		for_each_node_state(nid, N_MEMORY)
-		{
-    			if(NODE_DATA(nid)->pm_node==0)
-            			node_set(nid, nodemask_test);
-    			else
-            			node_clear(nid, nodemask_test);
-		}
-
-		if (nodemask)
-		// pr_warn("[CHECK] GFP=0 nodemask=%lx nodemask_test=%lx\n",
-		// 	nodemask->bits[0], nodemask_test.bits[0]);
-
-		nodemask = &nodemask_test;
-        }
-
 #endif	
-*/
 
 	if (unlikely(order >= MAX_ORDER)) {
 		WARN_ON_ONCE(!(gfp_mask & __GFP_NOWARN));
