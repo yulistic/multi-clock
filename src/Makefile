@@ -2,7 +2,7 @@
 VERSION = 5
 PATCHLEVEL = 3
 SUBLEVEL = 1
-EXTRAVERSION = -multiclock-print-nomig
+EXTRAVERSION = -multiclock-noprint-nomig
 NAME = Bobtail Squid with Multiclock No Log
 
 # *DOCUMENTATION*
