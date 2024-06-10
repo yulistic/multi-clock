@@ -2009,6 +2009,7 @@ struct page* vmscan_alloc_pmem_page(struct  page *page, unsigned long data)
 struct page* vmscan_alloc_normal_page(struct page *page, unsigned long data)
 {
         gfp_t gfp_mask = GFP_USER;
+	//return alloc_pages_node(0, gfp_mask, 0); // XXX: Hardcoding node 0
         return alloc_page(gfp_mask);
 }
 #endif
@@ -2031,8 +2032,8 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
 	struct pglist_data *pgdat = lruvec_pgdat(lruvec);
 	struct zone_reclaim_stat *reclaim_stat = &lruvec->reclaim_stat;
 	bool stalled = false;
-	struct page *page;
-	struct page *page2;
+	// struct page *page;
+	// struct page *page2;
 
 	while (unlikely(too_many_isolated(pgdat, file, sc))) {
 		if (stalled)
@@ -2063,23 +2064,49 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
 	__count_memcg_events(lruvec_memcg(lruvec), item, nr_scanned);
 	spin_unlock_irq(&pgdat->lru_lock);
 
+	// Test.
+	// if (pgdat->node_id == 0 && nr_taken > 0)
+	// 	pr_warn("nr_taken=%lu\n", nr_taken);
+
 	if (nr_taken == 0)
 		return 0;
+
 
 #ifdef CONFIG_MULTICLOCK
 	if (pgdat->pm_node == 0) {
 		// XXX: log demoting pages
-		list_for_each_entry_safe (page, page2, &page_list, lru) {
-			// pr_warn("multiclock src %lx @ nid %d, dst @ nid %d, pid %d\n",
-			pr_warn("multiclock demote src %lx @ nid %d, pid %d\n",
-				page_to_pfn(page), pgdat->node_id,
-				current->pid);
-		}
+		// list_for_each_entry_safe (page, page2, &page_list, lru) {
+			// pr_warn("multiclock demote src %lx @ nid %d, pid %d\n",
+			// 	page_to_pfn(page), pgdat->node_id,
+			// 	current->pid);
+		// }
+
+		// if (pgdat->node_id == 0)
+		// 	pr_warn("DE %d%d%d -> %d%d%d nr_taken=%lu\n",
+		// pgdat->node_id,
+		// pgdat->node_id,
+		// pgdat->node_id,
+		// 2,
+		// 2,
+		// 2,
+		// nr_taken);
+
+// exp-print
+//		pr_warn("DE from NUMA %d pid=%d nr_taken=%lu\n", pgdat->node_id, current->pid, nr_taken);
 
 		// XXX: Do not migrate.
-		int ret = migrate_pages(&page_list, vmscan_alloc_pmem_page, NULL, 0, MIGRATE_SYNC, MR_MEMORY_HOTPLUG);
-		// int ret = nr_taken;
+		// int ret = nr_taken; // Nothing migrated
+		int ret = migrate_pages(&page_list, vmscan_alloc_pmem_page, NULL,
+				      0, MIGRATE_SYNC, MR_MEMORY_HOTPLUG);
 		nr_reclaimed = (ret >= 0 ? nr_taken - ret : 0);
+
+// exp-print
+//		if (ret > 0)
+//			pr_warn("           (success / failed) : (%lu / %d)\n",
+//				nr_reclaimed, ret);
+//		else if (ret < 0)
+//			pr_warn("           migrate_pages failed rc=%d\n", ret);
+//
 		__mod_node_page_state(pgdat, NR_DEMOTED, nr_reclaimed);
 	}
 #endif
@@ -2246,6 +2273,9 @@ static void shrink_active_list(unsigned long nr_to_scan,
 	nr_activate = move_pages_to_lru(lruvec, &l_active);
 #ifdef CONFIG_MULTICLOCK
         nr_promote = move_pages_to_lru(lruvec, &l_promote);
+
+	// if (active_to_promote > 0 || nr_promote > 0)
+	// 	pr_warn("ACT->PRO nid=%d active_to_promote=%lu moved=%lu\n", pgdat->node_id, active_to_promote, nr_promote);
 #endif	
 	nr_deactivate = move_pages_to_lru(lruvec, &l_inactive);
 	/* Keep all free pages in l_active list */
@@ -2280,8 +2310,8 @@ shrink_promote_list(unsigned long nr_to_scan,
         isolate_mode_t isolate_mode = 0;
         int file = is_file_lru(lru);
         struct pglist_data *pgdat = lruvec_pgdat(lruvec);
-	struct page *page;
-	struct page *page2;
+	// struct page *page;
+	// struct page *page2;
 
         lru_add_drain();
 
@@ -2297,21 +2327,34 @@ shrink_promote_list(unsigned long nr_to_scan,
         __mod_node_page_state(pgdat, NR_ISOLATED_ANON + file, nr_taken);
         spin_unlock_irq(&pgdat->lru_lock);
 
+	// Test.
+	// if (nr_taken > 0)
+	// 	pr_warn("nr_taken=%lu nid=%d\n", nr_taken, pgdat->node_id);
+
         if (nr_taken) {
 		// XXX: log promoting pages
-		list_for_each_entry_safe (page, page2, &l_hold, lru) {
-			// pr_warn("multiclock src %lx @ nid %d, dst @ nid %d, pid %d\n",
-			pr_warn("multiclock promote src %lx @ nid %d, pid %d\n",
-				page_to_pfn(page), pgdat->node_id,
-				current->pid);
-		}
+		// list_for_each_entry_safe (page, page2, &l_hold, lru) {
+			// pr_warn("multiclock promote src %lx @ nid %d, pid %d\n",
+			// 	page_to_pfn(page), pgdat->node_id,
+			// 	current->pid);
+		// }
+
+// exp-print
+//		pr_warn("PRO from NUMA %d pid=%d nr_taken=%lu \n", pgdat->node_id, current->pid, nr_taken);
 
 		// XXX: Do not migrate.
-		int ret = migrate_pages(&l_hold, vmscan_alloc_normal_page,
-                                NULL, 0, MIGRATE_SYNC, MR_MEMORY_HOTPLUG);
 		// int ret = nr_taken; // nothing migrated.
-                nr_migrated = (ret < 0 ? 0 : nr_taken - ret);
-                __mod_node_page_state(pgdat, NR_PROMOTED, nr_migrated);
+		int ret = migrate_pages(&l_hold, vmscan_alloc_normal_page, NULL,
+					0, MIGRATE_SYNC, MR_MEMORY_HOTPLUG);
+		nr_migrated = (ret < 0 ? 0 : nr_taken - ret);
+
+// exp-print
+//		if (ret > 0)
+//			pr_warn("            (success / failed) : (%lu / %d)\n", nr_migrated, ret);
+//		else if (ret < 0)
+//			pr_warn("            migrate_pages failed rc=%d\n", ret);
+
+		__mod_node_page_state(pgdat, NR_PROMOTED, nr_migrated);
 
         }
 
@@ -4274,6 +4317,7 @@ static int kpromoted(void *p)
 
         for ( ; ; ) {
 		
+		// pr_warn("Wake up kpromoted. Scanning node.\n");
 		scan_node(pgdat, &sc);
                 
 
