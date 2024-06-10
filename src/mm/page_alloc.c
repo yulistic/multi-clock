@@ -4702,37 +4702,48 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order, int preferred_nid,
 	 */
 #ifdef CONFIG_MULTICLOCK
 
-	if (nodemask) {
-		if ((gfp_mask & __GFP_PMEM) != 0) {
-			for_each_node_state (nid, N_MEMORY) {
-				if (NODE_DATA(nid)->pm_node != 0 &&
-				    node_isset(nid, *nodemask))
+	if ((gfp_mask & __GFP_PMEM) != 0) {
+
+		for_each_node_state (nid, N_MEMORY) {
+
+			if (NODE_DATA(nid)->pm_node != 0) {
+				if (!nodemask || node_isset(nid, *nodemask))
 					node_set(nid, nodemask_test);
-				else
-					node_clear(nid, nodemask_test);
-			}
 
-			// pr_warn("[CHECK] GFP=1 nodemask=%lx nodemask_test=%lx\n",
-			// 	nodemask->bits[0], nodemask_test.bits[0]);
-
-			nodemask = &nodemask_test; // and with 100
-
-		} else if ((gfp_mask & __GFP_PMEM) == 0 && pmem_node_id != -1) {
-			for_each_node_state (nid, N_MEMORY) {
-				if (NODE_DATA(nid)->pm_node == 0 &&
-				    node_isset(nid, *nodemask))
-					node_set(nid, nodemask_test);
-				else
-					node_clear(nid, nodemask_test);
-			}
-
-			// pr_warn("[CHECK] GFP=0 nodemask=%lx nodemask_test=%lx\n",
-			// 	nodemask->bits[0], nodemask_test.bits[0]);
-
-			nodemask = &nodemask_test; // and with 011
+			} else
+				node_clear(nid, nodemask_test);
 		}
-	}
 
+		// if (nodemask) {
+		// 	pr_warn("[CHECK] GFP=1 preferred_nid=%d nodemask=%lx",
+		// 		preferred_nid, nodemask->bits[0]);
+		// }
+
+		// pr_warn(" nodemask_test=%lx\n", nodemask_test.bits[0]);
+
+		nodemask = &nodemask_test; // and with 100
+
+	} else if ((gfp_mask & __GFP_PMEM) == 0 && pmem_node_id != -1) {
+
+		for_each_node_state (nid, N_MEMORY) {
+
+			if (NODE_DATA(nid)->pm_node == 0) {
+				if (!nodemask || node_isset(nid, *nodemask))
+					node_set(nid, nodemask_test);
+
+			} else
+				node_clear(nid, nodemask_test);
+		}
+
+		// if (nodemask) {
+		// 	pr_warn("[CHECK] GFP=0 preferred_nid=%d nodemask=%lx",
+		// 		preferred_nid, nodemask->bits[0]);
+		// }
+
+		// pr_warn(" nodemask_test=%lx\n", nodemask_test.bits[0]);
+
+		nodemask = &nodemask_test; // and with 011
+	}
 #endif	
 
 	if (unlikely(order >= MAX_ORDER)) {
